@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Debug - Topkets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; margin-top: 0; }
+        h2 { color: #666; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        button.success { background: #28a745; }
+        button.success:hover { background: #218838; }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success-msg { color: #28a745; font-weight: bold; }
+        .error-msg { color: #dc3545; font-weight: bold; }
+        .info-msg { color: #007bff; font-weight: bold; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Authentication Debug Tool - Topkets</h1>
+        <p>Tool ini untuk debugging masalah login/register</p>
+    </div>
+
+    <div class="container">
+        <h2>1. Test Koneksi Database</h2>
+        <div class="test-section">
+            <button onclick="testDatabase()">Test Database Connection</button>
+            <div id="db-result" class="result"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>2. Test Session Configuration</h2>
+        <div class="test-section">
+            <button onclick="testSession()">Test Session</button>
+            <div id="session-result" class="result"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>3. Test Login</h2>
+        <div class="test-section">
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="login-email" value="demo@topkets.id" placeholder="email@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="login-password" value="password" placeholder="password">
+            </div>
+            <button class="success" onclick="testLogin()">Test Login</button>
+            <button onclick="checkSession()">Check Session</button>
+            <button class="danger" onclick="testLogout()">Logout</button>
+            <div id="login-result" class="result"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>4. Test Register</h2>
+        <div class="test-section">
+            <div class="form-group">
+                <label>Name:</label>
+                <input type="text" id="register-name" value="Test User" placeholder="Full Name">
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="register-email" value="test@example.com" placeholder="email@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="register-password" value="password123" placeholder="password">
+            </div>
+            <button class="success" onclick="testRegister()">Test Register</button>
+            <div id="register-result" class="result"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>5. LocalStorage Status</h2>
+        <div class="test-section">
+            <button onclick="checkLocalStorage()">Check LocalStorage</button>
+            <button class="danger" onclick="clearLocalStorage()">Clear LocalStorage</button>
+            <div id="storage-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/topkets/api';
+
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            const className = isError ? 'error-msg' : 'success-msg';
+            element.innerHTML = `<span class="${className}">${isError ? '❌ Error' : '✅ Success'}</span><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        async function testDatabase() {
+            try {
+                const response = await fetch(API_BASE + '/test-connection.php', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                displayResult('db-result', data, !data.success);
+            } catch (error) {
+                displayResult('db-result', { error: error.message }, true);
+            }
+        }
+
+        async function testSession() {
+            try {
+                const response = await fetch(API_BASE + '/test-session.php', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                displayResult('session-result', data, !data.success);
+            } catch (error) {
+                displayResult('session-result', { error: error.message }, true);
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const response = await fetch(API_BASE + '/auth/login.php', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store in localStorage
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userName', data.data.user.name);
+                    localStorage.setItem('userEmail', data.data.user.email);
+                    localStorage.setItem('userId', data.data.user.id);
+                    localStorage.setItem('userRole', data.data.user.role);
+                }
+                
+                displayResult('login-result', data, !data.success);
+            } catch (error) {
+                displayResult('login-result', { error: error.message }, true);
+            }
+        }
+
+        async function testRegister() {
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const response = await fetch(API_BASE + '/auth/register.php', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store in localStorage
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userName', data.data.user.name);
+                    localStorage.setItem('userEmail', data.data.user.email);
+                    localStorage.setItem('userId', data.data.user.id);
+                    localStorage.setItem('userRole', data.data.user.role);
+                }
+                
+                displayResult('register-result', data, !data.success);
+            } catch (error) {
+                displayResult('register-result', { error: error.message }, true);
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch(API_BASE + '/auth/check-session.php', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                displayResult('login-result', data, !data.success || !data.data.isLoggedIn);
+            } catch (error) {
+                displayResult('login-result', { error: error.message }, true);
+            }
+        }
+
+        async function testLogout() {
+            try {
+                const response = await fetch(API_BASE + '/auth/logout.php', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.clear();
+                }
+                
+                displayResult('login-result', data, !data.success);
+            } catch (error) {
+                displayResult('login-result', { error: error.message }, true);
+            }
+        }
+
+        function checkLocalStorage() {
+            const storage = {
+                isLoggedIn: localStorage.getItem('isLoggedIn'),
+                userName: localStorage.getItem('userName'),
+                userEmail: localStorage.getItem('userEmail'),
+                userId: localStorage.getItem('userId'),
+                userRole: localStorage.getItem('userRole')
+            };
+            displayResult('storage-result', storage);
+        }
+
+        function clearLocalStorage() {
+            localStorage.clear();
+            displayResult('storage-result', { message: 'LocalStorage cleared' });
+        }
+
+        // Auto check on load
+        window.addEventListener('load', () => {
+            checkLocalStorage();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topkets API Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .success {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+        }
+
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .status.success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+
+        .status.pending {
+            background: #ff9800;
+            color: white;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🎫 Topkets API Test</h1>
+            <p class="subtitle">Test your database connection and API endpoints</p>
+
+            <!-- Database Connection Test -->
+            <div class="test-section">
+                <h2>1. Database Connection Test</h2>
+                <button onclick="testConnection()">Test Connection</button>
+                <div id="connection-result"></div>
+            </div>
+
+            <!-- Authentication Test -->
+            <div class="test-section">
+                <h2>2. Authentication Test</h2>
+                
+                <div class="input-group">
+                    <label>Email:</label>
+                    <input type="email" id="test-email" value="demo@topkets.id" placeholder="Enter email">
+                </div>
+                
+                <div class="input-group">
+                    <label>Password:</label>
+                    <input type="password" id="test-password" value="password" placeholder="Enter password">
+                </div>
+                
+                <button onclick="testLogin()">Test Login</button>
+                <button onclick="testCheckSession()">Check Session</button>
+                <button onclick="testLogout()">Test Logout</button>
+                <div id="auth-result"></div>
+            </div>
+
+            <!-- Events Test -->
+            <div class="test-section">
+                <h2>3. Events Test</h2>
+                <button onclick="testGetAllEvents()">Get All Events</button>
+                <button onclick="testGetEventsByCategory('konser')">Get Konser Events</button>
+                <button onclick="testSearchEvents('coldplay')">Search "coldplay"</button>
+                <div id="events-result"></div>
+            </div>
+
+            <!-- Wishlist Test -->
+            <div class="test-section">
+                <h2>4. Wishlist Test (Requires Login)</h2>
+                <button onclick="testAddToWishlist()">Add to Wishlist</button>
+                <button onclick="testGetWishlist()">Get Wishlist</button>
+                <button onclick="testRemoveFromWishlist()">Remove from Wishlist</button>
+                <div id="wishlist-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script>
+        // Test database connection
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            resultDiv.innerHTML = '<div class="status pending">Testing...</div>';
+            
+            try {
+                const response = await API.get(API_CONFIG.ENDPOINTS.TEST_CONNECTION);
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Connected</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test login
+        async function testLogin() {
+            const resultDiv = document.getElementById('auth-result');
+            const email = document.getElementById('test-email').value;
+            const password = document.getElementById('test-password').value;
+            
+            resultDiv.innerHTML = '<div class="status pending">Logging in...</div>';
+            
+            try {
+                const response = await API.post(API_CONFIG.ENDPOINTS.LOGIN, {
+                    email: email,
+                    password: password
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Login Successful</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Login Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test check session
+        async function testCheckSession() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<div class="status pending">Checking session...</div>';
+            
+            try {
+                const response = await API.get(API_CONFIG.ENDPOINTS.CHECK_SESSION);
+                
+                const status = response.data.logged_in ? 'success' : 'error';
+                const statusText = response.data.logged_in ? '✓ Logged In' : '✗ Not Logged In';
+                
+                resultDiv.innerHTML = `
+                    <div class="status ${status}">${statusText}</div>
+                    <div class="result ${status}">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test logout
+        async function testLogout() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<div class="status pending">Logging out...</div>';
+            
+            try {
+                const response = await API.post(API_CONFIG.ENDPOINTS.LOGOUT);
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Logout Successful</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Logout Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test get all events
+        async function testGetAllEvents() {
+            const resultDiv = document.getElementById('events-result');
+            resultDiv.innerHTML = '<div class="status pending">Loading events...</div>';
+            
+            try {
+                const response = await API.get(API_CONFIG.ENDPOINTS.GET_ALL_EVENTS, {
+                    limit: 10,
+                    status: 'active'
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Found ${response.data.count} events</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test get events by category
+        async function testGetEventsByCategory(category) {
+            const resultDiv = document.getElementById('events-result');
+            resultDiv.innerHTML = '<div class="status pending">Loading events...</div>';
+            
+            try {
+                const response = await API.get(API_CONFIG.ENDPOINTS.GET_ALL_EVENTS, {
+                    category: category,
+                    status: 'active'
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Found ${response.data.count} ${category} events</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test search events
+        async function testSearchEvents(searchTerm) {
+            const resultDiv = document.getElementById('events-result');
+            resultDiv.innerHTML = '<div class="status pending">Searching...</div>';
+            
+            try {
+                const response = await API.get(API_CONFIG.ENDPOINTS.GET_ALL_EVENTS, {
+                    search: searchTerm,
+                    status: 'active'
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Found ${response.data.count} results</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test add to wishlist
+        async function testAddToWishlist() {
+            const resultDiv = document.getElementById('wishlist-result');
+            resultDiv.innerHTML = '<div class="status pending">Adding to wishlist...</div>';
+            
+            try {
+                const response = await API.post(API_CONFIG.ENDPOINTS.ADD_TO_WISHLIST, {
+                    event_id: 'coldplay'
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Added to Wishlist</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}\n\nNote: You must be logged in to use wishlist features.</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test get wishlist
+        async function testGetWishlist() {
+            const resultDiv = document.getElementById('wishlist-result');
+            resultDiv.innerHTML = '<div class="status pending">Loading wishlist...</div>';
+            
+            try {
+                const response = await API.get(API_CONFIG.ENDPOINTS.GET_USER_WISHLIST);
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Found ${response.data.count} items</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}\n\nNote: You must be logged in to use wishlist features.</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test remove from wishlist
+        async function testRemoveFromWishlist() {
+            const resultDiv = document.getElementById('wishlist-result');
+            resultDiv.innerHTML = '<div class="status pending">Removing from wishlist...</div>';
+            
+            try {
+                const response = await API.delete(API_CONFIG.ENDPOINTS.REMOVE_FROM_WISHLIST, {
+                    event_id: 'coldplay'
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✓ Removed from Wishlist</div>
+                    <div class="result success">
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">✗ Failed</div>
+                    <div class="result error">
+                        <pre>${error.message}\n\nNote: You must be logged in to use wishlist features.</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-test connection on page load
+        window.addEventListener('load', function() {
+            console.log('API Test Page Loaded');
+            console.log('API Base URL:', API_CONFIG.BASE_URL);
+        });
+    </script>
+</body>
+</html>
